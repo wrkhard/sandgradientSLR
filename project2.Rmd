@@ -1,0 +1,229 @@
+---
+title: "Project 2"
+author: "William Keely"
+date: "4-25-2019"
+output:
+  html_document:
+    code_folding: show
+    csl: biomed-central.csl
+    df_print: paged
+    fig_caption: yes
+    fig_height: 6
+    fig_width: 7
+    number_sections: yes
+    theme: journal
+    toc: yes
+    toc_float: yes
+  word_document:
+    toc: yes
+    toc_depth: '4'
+  pdf_document:
+    df_print: kable
+    fig_caption: yes
+    fig_height: 6
+    fig_width: 7
+    highlight: tango
+    toc: yes
+    toc_depth: 4
+bibliography: project.bib
+#abstract: ![](wrk.jpg){width=20%}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<center>
+![](wrk.jpg){width=20%}
+</center>
+
+# Introduction
+
+>
+  This project looks at the applications of simple linear regression (SLR) to real word data. In our case we will look at the relationship between the diameter of grainules of sand in mililimeters and the gradient slope of the beach on which they're found. It is inspired by research done at the New Zealand Journal of Geology and Geophysics, by R. F. McLean and R. M. Kirk. The data set for this SLR comes from Statistics for Engineering and Sciences, 6th Edition 2016, by William M. Mendenhall and Terry L. Sincich.
+  
+<center>
+
+![](beach.jpg "beach"){width=90%}
+
+</center>
+
+# The Data
+
+>
+  The data has several samples of sand and the slope of the beach from where they were gathered. Diameter of sand is measured in milimeters from which the median result is given. The gradient is taken in degrees.
+  
+```{r}
+sand.df = read.csv("sandgrain.csv")
+sand.df
+```
+
+## Initial Plots and Analysis
+
+
+```{r}
+
+library(ggplot2)
+
+g = ggplot(sand.df, aes(x = gradient, y = diameter, color = "cyl")) + geom_point()
+g = g + geom_smooth(method = "loess")
+g
+```
+
+>
+  Our ggplot seems to show a potential linear relationship, meaning our data may be suitable for SLR.
+  
+```{r}
+plot(sand.df, main="Initial Plot for gradient v. diameter")
+```
+
+  
+```{r}
+sand.lm = with(sand.df, lm(diameter~gradient))
+plot(diameter~gradient, bg="Green", pch=21,cex=1.2
+     ,main="Fitted Line Plot for gradient v. diameter",
+     data = sand.df)
+abline(sand.lm)
+```
+
+>
+  Creating a linear model and fitting it to our scatter plot, we find that a line may indeed be a good fit.
+  
+# SLR Assumptions
+
+The SLR model we will be using is: $$y = \beta_{0} + \beta_{1} x_{i} + \epsilon_{i}$$
+
+Where $\beta_{0}$ and $\beta_{1}$ are unknowns and will need to be estimated. $\beta_{0} + \beta_{1} x = \overline{y}$ where $\overline{y}$ is the mean value for y. The error in our equation is measured by $\epsilon$ since we will have values that deviate from our line. In a perfect model, $E(\epsilon) = 0$ implying that $E(y) = E( \beta_{0} + \beta_{0} x_{i} + \epsilon_{i} ) = \beta_{0} + \beta_{1} x_{i}$
+
+>
+  This leads us to four assumptions that we can make about our SLR model.
+  
+## Assumption 1:
+  
+  Mean of $\epsilon = 0$
+  
+## Assumption 2:
+
+  Variance of $\epsilon$ is constant.
+  
+## Assumption 3:
+
+  $\epsilon$ is distributed Normally.
+  
+## Assumption 4:
+
+  $\epsilon$ is independent.
+  
+# Estimation of $\beta_{0}$ and $\beta_{1}$
+
+```{r}
+summary(sand.lm)
+```
+
+The anaylisis of the summary shows that $\hat{\beta_{0}}$ = -2.4759 and $\hat{\beta_{1}}$ = 17.1594
+
+# Confidence Intervals for $\beta_{0}$ and $\beta_{1}$
+
+            95 % C.I.lower    95 % C.I.upper
+(Intercept)       -4.32810          -0.62375
+diameter          12.35074          21.96800
+
+95% CI for $\hat{\beta_{0}}$ = (-4.32810,-0.62375), 95% CI for $\hat{\beta_{1}}$ = (12.3507, 21.9680). Our summary estimates fall with in both of our CI intervals, implying that our findings are valid.
+
+# A Look at Residuals
+
+We want to take a closer look at the at the deviation of points from our fitted line as our data does not fit the model perfectly. Plotting the residuals will allow us to take a look at the residual sum of squares (RSS).
+
+```{r}
+yhat=fitted(sand.lm)
+
+with(sand.df,
+     plot(diameter~gradient, bg="Green", pch=21,cex=1.2
+     ,main="Fitted Line Plot for gradient v. diameter"
+     ))
+with(sand.df,
+     segments(gradient,diameter,gradient,yhat))
+abline(sand.lm)
+RSS=with(sand.df,sum((diameter-yhat)^2))
+RSS
+```
+
+```{r}
+with(sand.df,
+     plot(diameter~gradient, bg="Green",pch=21))
+with(sand.df, abline(h=mean(diameter)))
+with(sand.df,segments(gradient,mean(diameter),gradient,yhat,col="Red"))
+abline(sand.lm)
+
+MSS=with(sand.df,sum((yhat-mean(diameter))^2))
+MSS
+```
+
+```{r}
+with(sand.df,
+     plot(diameter~gradient,bg="Green",pch=21,main="Total Sum of Squares Plot"))
+with(sand.df,abline(h=mean(diameter)))
+with(sand.df,segments(gradient,diameter,gradient,mean(diameter),col="Blue"))
+
+TSS = with(sand.df,sum((diameter-mean(diameter))^2))
+TSS
+```
+
+We will take a closer look at MSS/TSS as it will give us insight into the correctness of fit of our trend line.
+
+```{r}
+Rsqr = MSS/TSS
+Rsqr
+```
+
+0.9104867 suggests that our line fits the dataset.
+
+# A Look at Error
+
+Plot the Residuals versus Gradient. 
+
+```{r}
+h.res = residuals(sand.lm)
+h.fit = fitted(sand.lm)
+
+plot(sand.df$gradient,h.res, xlab = "gradient", ylab="Residuals")
+```
+
+
+Residuals are symmetrical about zero, and indicates that the line is a good fit.
+
+```{r}
+library(s20x)
+normcheck(sand.lm, shapiro.wilk = TRUE)
+```
+
+
+With a p-value greater than 0.05 we can assume that our datais distributed normally and that the mean of $\epsilon$ = 0, and has a constant varience.
+
+# Check for Bias
+
+We'll check the Cook's Distance and examine the effect of potentially removing any points from our SLR model. If a point has a large Cook's Distance then we may want to remove it from our model.
+
+```{r}
+library(s20x)
+cooks20x(sand.lm)
+```
+
+
+The point at 90 has a rather large value ie. is greater than 0.10. We could potentially remove this to increase the accuracie of our model.
+
+# Conclusion
+
+As we have seen in our analysis above, the mdedian diameter of sand has a linear relationship with the slope of the beach it was found on. We have met the requirements for our four SLR assumptions, thus it is very likely that our assumption of the data is true. Going forward however we may want to be carefull about removing the point with the high Cook's Distance as one issue with our data is that it is a small data set. With more samples we may find that the best fit line would make the point at 90 part of our accepted residual range.
+
+# References
+
+R. F. McLean & R. M. Kirk, Relationships between grain size, size-sorting, and foreshore slope on mixed sand - shingle beaches. New Zealand Journal of Geology and Geophysics. https://www.tandfonline.com/doi/pdf/10.1080/00288306.1969.10420231
+
+Houghton Mifflin. Data Sets for Simple Linear Regression.
+https://college.cengage.com/mathematics/brase/understandable_statistics/7e/students/datasets/slr/frames/frame.html
+
+
+
+
+
